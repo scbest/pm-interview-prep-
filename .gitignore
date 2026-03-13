@@ -1,0 +1,14 @@
+# Personal candidate data — never commit
+candidate-profile/profile.md
+candidate-profile/resume/*.pdf
+candidate-profile/resume/*.docx
+candidate-profile/resume/*.doc
+
+# Company research and prep docs — never commit
+Companies/*/
+# Keep the template folder
+!Companies/_template/
+!Companies/_template/**
+
+# OS files
+.DS_Store
