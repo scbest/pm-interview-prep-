@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vanta Organizations Hub: Bet Progression</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f7;
+      color: #1d1d1f;
+      padding: 40px 24px;
+    }
+    h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+    .subtitle { font-size: 14px; color: #6e6e73; margin-bottom: 32px; }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 4px; margin-bottom: 0; position: relative; z-index: 1; }
+    .tab {
+      padding: 10px 20px; font-size: 13px; font-weight: 600;
+      border: none; background: #e5e5ea; color: #6e6e73;
+      border-radius: 10px 10px 0 0; cursor: pointer; transition: all 0.2s;
+    }
+    .tab:hover { background: #d1d1d6; color: #1d1d1f; }
+    .tab.active { background: white; color: #1d1d1f; box-shadow: 0 -1px 4px rgba(0,0,0,0.06); }
+    .tab .tab-quarter { font-size: 10px; font-weight: 500; color: #8e8e93; margin-left: 6px; }
+    .tab.active .tab-quarter { color: #6e6e73; }
+
+    /* Tab content */
+    .tab-content {
+      display: none; background: white; border-radius: 0 12px 12px 12px;
+      padding: 32px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); min-height: 500px;
+    }
+    .tab-content.active { display: block; }
+    .tab-header { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+    .tab-desc { font-size: 13px; color: #6e6e73; margin-bottom: 24px; line-height: 1.5; }
+
+    .whats-new {
+      background: #eef3ff; border: 1px solid #c5d5f7; border-radius: 8px;
+      padding: 12px 16px; font-size: 12px; color: #2c5cdb; margin-bottom: 24px; line-height: 1.5;
+    }
+    .whats-new strong { font-weight: 600; }
+    .whats-new ul { margin: 6px 0 0 16px; }
+    .whats-new li { margin: 2px 0; }
+
+    /* Tree */
+    .tree { list-style: none; padding: 0; }
+    .tree li { position: relative; padding-left: 24px; margin: 6px 0; }
+    .tree li::before {
+      content: ''; position: absolute; left: 0; top: 12px;
+      width: 16px; height: 1px; background: #d1d1d6;
+    }
+    .tree li::after {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+      width: 1px; background: #d1d1d6;
+    }
+    .tree li:last-child::after { height: 12px; }
+
+    /* Nodes */
+    .node {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 6px; font-size: 13px;
+      font-weight: 500; line-height: 1.4;
+    }
+    .node .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+    /* Colors */
+    .framework  { background: #eef3ff; color: #2c5cdb; }
+    .framework .dot { background: #2c5cdb; }
+    .control    { background: #e8f7ee; color: #1a7f44; }
+    .control .dot { background: #1a7f44; }
+    .control-dup { background: #fff4e5; color: #b55a00; }
+    .control-dup .dot { background: #b55a00; }
+    .org        { background: #fdeef3; color: #b5005b; }
+    .org .dot   { background: #b5005b; }
+    .hub        { background: #1d1d1f; color: #fff; }
+    .hub .dot   { background: #fff; }
+    .common-ctrl { background: #e8f7ee; color: #1a7f44; }
+    .common-ctrl .dot { background: #1a7f44; }
+    .exception  { background: #fdf2f2; color: #9b2c2c; }
+    .exception .dot { background: #9b2c2c; }
+    .inherited  { background: #e8f7ee; color: #1a7f44; border: 1.5px dashed #1a7f44; }
+    .inherited .dot { background: #1a7f44; }
+    .shared-ev  { background: #f0f5ff; color: #4a6fa5; border: 1.5px dashed #4a6fa5; }
+    .shared-ev .dot { background: #4a6fa5; }
+
+    .badge {
+      font-size: 10px; font-weight: 600; padding: 2px 7px;
+      border-radius: 4px; margin-left: 4px; vertical-align: middle;
+    }
+    .badge-ga      { background: #e8f7ee; color: #1a7f44; }
+    .badge-preview { background: #fff4e5; color: #b55a00; }
+    .badge-early   { background: #eef3ff; color: #2c5cdb; }
+    .badge-new     { background: #1d1d1f; color: #fff; }
+    .badge-dup     { background: #fff4e5; color: #b55a00; }
+    .badge-req     { background: #fdeef3; color: #b5005b; }
+    .badge-rec     { background: #eef3ff; color: #2c5cdb; }
+    .badge-exc     { background: #fdf2f2; color: #9b2c2c; }
+    .badge-shared  { background: #f0f5ff; color: #4a6fa5; }
+
+    /* Framework tags (inline, small) */
+    .fw-tags { display: inline-flex; gap: 4px; margin-left: 8px; flex-wrap: wrap; }
+    .fw-tag {
+      font-size: 9px; font-weight: 600; padding: 1px 6px; border-radius: 3px;
+      background: #eef3ff; color: #2c5cdb; white-space: nowrap;
+    }
+    .fw-tag-missing {
+      font-size: 9px; font-weight: 600; padding: 1px 6px; border-radius: 3px;
+      background: #f5f5f7; color: #8e8e93; white-space: nowrap; text-decoration: line-through;
+    }
+
+    /* Layout */
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+    @media (max-width: 900px) { .row, .row-3 { grid-template-columns: 1fr; } }
+
+    .col-label { font-size: 12px; font-weight: 600; color: #6e6e73; margin-bottom: 14px; }
+
+    .arrow-row { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+    .maps-to { font-size: 11px; color: #6e6e73; white-space: nowrap; }
+
+    .callout {
+      background: #fff8ed; border-left: 3px solid #f5a623; border-radius: 6px;
+      padding: 12px 16px; font-size: 13px; color: #5c4100; margin-top: 20px;
+    }
+    .callout strong { font-weight: 600; }
+    .gap-callout {
+      background: #fdeef3; border-left: 3px solid #b5005b; border-radius: 6px;
+      padding: 12px 16px; font-size: 13px; color: #6b0035; margin-top: 20px;
+    }
+
+    .gap-table-wrap {
+      margin-top: 20px; padding: 14px 16px; background: #f9f9fb; border-radius: 8px;
+    }
+    .gap-table-title { font-size: 12px; font-weight: 600; color: #6e6e73; margin-bottom: 10px; }
+    .gap-table { width: 100%; font-size: 12px; border-collapse: collapse; }
+    .gap-table th {
+      padding: 6px 8px; font-weight: 600; color: #6e6e73;
+      text-align: left; border-bottom: 1px solid #e5e5ea;
+    }
+    .gap-table td { padding: 6px 8px; border-bottom: 1px solid #f0f0f0; }
+    .gap-table tr:last-child td { border-bottom: none; }
+    .st-match { color: #1a7f44; }
+    .st-drift { color: #b55a00; }
+    .st-gap   { color: #b5005b; }
+    .st-exception { color: #9b2c2c; }
+    .st-shared { color: #4a6fa5; }
+
+    .legend {
+      display: flex; gap: 16px; flex-wrap: wrap;
+      padding: 12px 16px; background: #f9f9fb; border-radius: 8px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #3c3c43; }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    .divider { border: none; border-top: 1px solid #f0f0f0; margin: 16px 0; }
+    .note { font-size: 12px; color: #6e6e73; margin-top: 16px; line-height: 1.5; }
+    .tab-section { margin-bottom: 28px; }
+    .tab-section-title {
+      font-size: 13px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.06em; color: #6e6e73; margin-bottom: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Organizations Hub: Product Hierarchy Progression</h1>
+<p class="subtitle">Click each tab to see how the object model evolves across bets</p>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('current')">Current State</button>
+  <button class="tab" onclick="showTab('bet1')">Bet 1<span class="tab-quarter">Q1-Q2</span></button>
+  <button class="tab" onclick="showTab('bet2')">Bet 2<span class="tab-quarter">Q2-Q3</span></button>
+  <button class="tab" onclick="showTab('bet3')">Bet 3<span class="tab-quarter">Q3-Q4</span></button>
+</div>
+
+<!-- ========== CURRENT STATE ========== -->
+<div id="current" class="tab-content active">
+  <div class="tab-header">Current State: Disconnected Orgs, Duplicated Controls</div>
+  <div class="tab-desc">Each org is a separate Vanta account with its own controls mapped to its own frameworks. No cross-org visibility, no shared standards, no central governance. Central teams manually compare controls via spreadsheets.</div>
+
+  <div class="legend" style="margin-bottom: 24px;">
+    <div class="legend-item"><div class="legend-dot" style="background:#b5005b"></div> Org (separate Vanta account)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#1a7f44"></div> Control</div>
+    <div class="legend-item"><span class="fw-tag" style="margin:0;">SOC 2</span> Framework mapping</div>
+    <div class="legend-item"><span style="font-size:11px; color:#b55a00;">&#9888;</span> Inconsistency</div>
+    <div class="legend-item"><span style="font-size:11px; color:#b5005b;">&#10007;</span> Missing</div>
+  </div>
+
+  <div class="row-3">
+    <!-- Org A -->
+    <div>
+      <ul class="tree">
+        <li>
+          <span class="node org"><span class="dot"></span>Org A: US Entity</span>
+          <ul class="tree">
+            <li>
+              <span class="node control"><span class="dot"></span>MFA Required</span>
+              <span class="fw-tags"><span class="fw-tag">SOC 2</span><span class="fw-tag">HIPAA</span></span>
+            </li>
+            <li>
+              <span class="node control"><span class="dot"></span>Encryption at Rest</span>
+              <span class="fw-tags"><span class="fw-tag">SOC 2</span><span class="fw-tag">HIPAA</span></span>
+            </li>
+            <li>
+              <span class="node control"><span class="dot"></span>Audit Logging</span>
+              <span class="fw-tags"><span class="fw-tag">SOC 2</span></span>
+            </li>
+            <li>
+              <span class="node control"><span class="dot"></span>Vendor Risk Mgmt</span>
+              <span class="fw-tags"><span class="fw-tag">SOC 2</span><span class="fw-tag">HIPAA</span></span>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Org B -->
+    <div>
+      <ul class="tree">
+        <li>
+          <span class="node org"><span class="dot"></span>Org B: EU Entity</span>
+          <ul class="tree">
+            <li>
+              <span class="node control"><span class="dot"></span>MFA Required</span>
+              <span class="fw-tags"><span class="fw-tag">ISO 27001</span></span>
+            </li>
+            <li>
+              <span class="node control-dup"><span class="dot"></span>Encryption at Rest</span>
+              <span class="fw-tags"><span class="fw-tag">ISO 27001</span></span>
+              <span class="badge badge-dup">&#9888; different config</span>
+            </li>
+            <li style="opacity: 0.4;">
+              <span class="node control"><span class="dot"></span>Audit Logging</span>
+              <span style="font-size:11px; color:#b5005b; margin-left:8px;">&#10007; missing</span>
+            </li>
+            <li>
+              <span class="node control"><span class="dot"></span>Vendor Risk Mgmt</span>
+              <span class="fw-tags"><span class="fw-tag">ISO 27001</span></span>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Org C -->
+    <div>
+      <ul class="tree">
+        <li>
+          <span class="node org"><span class="dot"></span>Org C: APAC Entity</span>
+          <ul class="tree">
+            <li style="opacity: 0.4;">
+              <span class="node control"><span class="dot"></span>MFA Required</span>
+              <span style="font-size:11px; color:#b5005b; margin-left:8px;">&#10007; missing</span>
+            </li>
+            <li>
+              <span class="node control"><span class="dot"></span>Encryption at Rest</span>
+              <span class="fw-tags"><span class="fw-tag">SOC 2</span></span>
+            </li>
+            <li>
+              <span class="node control"><span class="dot"></span>Audit Logging</span>
+              <span class="fw-tags"><span class="fw-tag">SOC 2</span></span>
+            </li>
+            <li style="opacity: 0.4;">
+              <span class="node control"><span class="dot"></span>Vendor Risk Mgmt</span>
+              <span style="font-size:11px; color:#b5005b; margin-left:8px;">&#10007; missing</span>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="gap-callout"><strong>The problem:</strong> Each org defines controls independently. The same control (e.g., MFA Required) exists in Org A for SOC 2 and Org B for ISO 27001, but there's no connection between them. Central teams can't see gaps, can't enforce standards, and discover inconsistencies from auditors rather than the platform.</div>
+</div>
+
+<!-- ========== BET 1 ========== -->
+<div id="bet1" class="tab-content">
+  <div class="tab-header">Bet 1: Actionable Cross-Org Visibility + Governance Lite</div>
+  <div class="tab-desc">Introduces the Organizations Hub layer and a new cross-org control object. CCAs create hub-level control definitions mapped to frameworks and tagged by org type. The system matches these against existing org controls and surfaces a gap analysis. No push-down or enforcement yet.</div>
+
+  <div class="whats-new">
+    <strong>What's new in Bet 1:</strong>
+    <ul>
+      <li>Organizations Hub layer connecting separate orgs</li>
+      <li>Hub-level control definitions (new cross-org data object) mapped to frameworks and tagged required/recommended</li>
+      <li>Automated gap analysis: system matches hub controls to existing org controls</li>
+      <li>Conversational hub interface for cross-org queries</li>
+      <li>Role-aware views and prioritized attention signals</li>
+    </ul>
+  </div>
+
+  <ul class="tree">
+    <li>
+      <span class="node hub"><span class="dot"></span>Organizations Hub</span>
+      <ul class="tree">
+
+        <!-- Hub-level controls with framework mappings -->
+        <li>
+          <span class="node common-ctrl"><span class="dot"></span>Hub Control: MFA Required</span>
+          <span class="badge badge-req">Required</span>
+          <span class="fw-tags"><span class="fw-tag">SOC 2 CC6.1</span><span class="fw-tag">ISO 27001 A.9.4.2</span><span class="fw-tag">HIPAA &sect;164.312(d)</span></span>
+        </li>
+        <li>
+          <span class="node common-ctrl"><span class="dot"></span>Hub Control: Encryption at Rest</span>
+          <span class="badge badge-req">Required</span>
+          <span class="fw-tags"><span class="fw-tag">SOC 2 CC6.7</span><span class="fw-tag">ISO 27001 A.10.1.1</span><span class="fw-tag">HIPAA &sect;164.312(a)(2)(iv)</span></span>
+        </li>
+        <li>
+          <span class="node common-ctrl"><span class="dot"></span>Hub Control: Audit Logging</span>
+          <span class="badge badge-rec">Recommended</span>
+          <span class="fw-tags"><span class="fw-tag">SOC 2 CC7.2</span><span class="fw-tag">ISO 27001 A.12.4.1</span></span>
+        </li>
+        <li>
+          <span class="node common-ctrl"><span class="dot"></span>Hub Control: Vendor Risk Mgmt</span>
+          <span class="badge badge-req">Required</span>
+          <span class="fw-tags"><span class="fw-tag">SOC 2 CC9.2</span><span class="fw-tag">ISO 27001 A.15.1.1</span><span class="fw-tag">HIPAA &sect;164.308(b)(1)</span></span>
+        </li>
+
+        <li style="margin-top: 8px;"><hr class="divider" style="margin: 0;"/></li>
+
+        <!-- Connected orgs (now visible from the hub) -->
+        <li>
+          <span class="node org"><span class="dot"></span>Org A: US Entity</span>
+          <span class="fw-tags"><span class="fw-tag">SOC 2</span><span class="fw-tag">HIPAA</span></span>
+        </li>
+        <li>
+          <span class="node org"><span class="dot"></span>Org B: EU Entity</span>
+          <span class="fw-tags"><span class="fw-tag">ISO 27001</span></span>
+        </li>
+        <li>
+          <span class="node org"><span class="dot"></span>Org C: APAC Entity</span>
+          <span class="fw-tags"><span class="fw-tag">SOC 2</span></span>
+        </li>
+      </ul>
+    </li>
+  </ul>
+
+  <!-- Gap analysis -->
+  <div class="gap-table-wrap" style="margin-top: 24px;">
+    <div class="gap-table-title">Gap analysis: hub controls vs. existing org controls (surfaced automatically)</div>
+    <table class="gap-table">
+      <tr>
+        <th>Org</th>
+        <th>MFA Required</th>
+        <th>Encryption at Rest</th>
+        <th>Audit Logging</th>
+        <th>Vendor Risk Mgmt</th>
+      </tr>
+      <tr>
+        <td style="font-weight:500;">Org A: US</td>
+        <td class="st-match">&#10003; Match</td>
+        <td class="st-match">&#10003; Match</td>
+        <td class="st-match">&#10003; Match</td>
+        <td class="st-match">&#10003; Match</td>
+      </tr>
+      <tr>
+        <td style="font-weight:500;">Org B: EU</td>
+        <td class="st-match">&#10003; Match</td>
+        <td class="st-drift">&#9888; Drift</td>
+        <td class="st-gap">&#10007; Gap</td>
+        <td class="st-match">&#10003; Match</td>
+      </tr>
+      <tr>
+        <td style="font-weight:500;">Org C: APAC</td>
+        <td class="st-gap">&#10007; Gap</td>
+        <td class="st-match">&#10003; Match</td>
+        <td class="st-match">&#10003; Match</td>
+        <td class="st-gap">&#10007; Gap</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="callout"><strong>Architectural note:</strong> The hub control object is a new cross-org data model entity. It doesn't exist today. Bet 1 introduces it so that Bet 2's inheritance engine builds on a real foundation, not a throwaway abstraction. No push-down or enforcement yet; visibility and signaling only.</div>
+</div>
+
+<!-- ========== BET 2 ========== -->
+<div id="bet2" class="tab-content">
+  <div class="tab-header">Bet 2: Centralized Governance</div>
+  <div class="tab-desc">Hub controls now push down to connected orgs. OCMs receive inherited controls, acknowledge, implement, or request exceptions. CCAs monitor rollout and enforce compliance deadlines. Exception workflow ships alongside inheritance because governance without flexibility won't get adopted.</div>
+
+  <div class="whats-new">
+    <strong>What's new in Bet 2:</strong>
+    <ul>
+      <li>Control inheritance: hub controls push down to in-scope orgs automatically</li>
+      <li>OCM task queue: inherited controls appear as actionable items with deadlines</li>
+      <li>Exception request and approval workflow with audit trail</li>
+      <li>Rollout monitoring: per-org status tracking from the hub</li>
+      <li>Scoped to top 3 frameworks initially</li>
+    </ul>
+  </div>
+
+  <ul class="tree">
+    <li>
+      <span class="node hub"><span class="dot"></span>Organizations Hub</span>
+      <ul class="tree">
+
+        <!-- Hub controls -->
+        <li>
+          <span class="node common-ctrl"><span class="dot"></span>Hub Control: MFA Required</span>
+          <span class="badge badge-req">Required</span>
+          <span class="fw-tags"><span class="fw-tag">SOC 2 CC6.1</span><span class="fw-tag">ISO 27001 A.9.4.2</span><span class="fw-tag">HIPAA &sect;164.312(d)</span></span>
+        </li>
+        <li>
+          <span class="node common-ctrl"><span class="dot"></span>Hub Control: Encryption at Rest</span>
+          <span class="badge badge-req">Required</span>
+          <span class="fw-tags"><span class="fw-tag">SOC 2 CC6.7</span><span class="fw-tag">ISO 27001 A.10.1.1</span><span class="fw-tag">HIPAA &sect;164.312(a)(2)(iv)</span></span>
+        </li>
+        <li>
+          <span class="node common-ctrl"><span class="dot"></span>Hub Control: Audit Logging</span>
+          <span class="badge badge-rec">Recommended</span>
+          <span class="fw-tags"><span class="fw-tag">SOC 2 CC7.2</span><span class="fw-tag">ISO 27001 A.12.4.1</span></span>
+        </li>
+        <li>
+          <span class="node common-ctrl"><span class="dot"></span>Hub Control: Vendor Risk Mgmt</span>
+          <span class="badge badge-req">Required</span>
+          <span class="fw-tags"><span class="fw-tag">SOC 2 CC9.2</span><span class="fw-tag">ISO 27001 A.15.1.1</span><span class="fw-tag">HIPAA &sect;164.308(b)(1)</span></span>
+        </li>
+
+        <li style="margin-top: 8px;"><hr class="divider" style="margin: 0;"/></li>
+
+        <!-- Org A: mostly verified -->
+        <li>
+          <span class="node org"><span class="dot"></span>Org A: US Entity</span>
+          <ul class="tree">
+            <li><span class="node inherited"><span class="dot"></span>MFA Required</span> <span class="badge badge-ga">Verified</span></li>
+            <li><span class="node inherited"><span class="dot"></span>Encryption at Rest</span> <span class="badge badge-ga">Verified</span></li>
+            <li><span class="node inherited"><span class="dot"></span>Audit Logging</span> <span class="badge badge-ga">Verified</span></li>
+            <li><span class="node inherited"><span class="dot"></span>Vendor Risk Mgmt</span> <span class="badge badge-preview">In Progress</span></li>
+          </ul>
+        </li>
+
+        <!-- Org B: has an exception -->
+        <li>
+          <span class="node org"><span class="dot"></span>Org B: EU Entity</span>
+          <ul class="tree">
+            <li><span class="node inherited"><span class="dot"></span>MFA Required</span> <span class="badge badge-ga">Verified</span></li>
+            <li><span class="node inherited"><span class="dot"></span>Encryption at Rest</span> <span class="badge badge-preview">In Progress</span></li>
+            <li><span class="node exception"><span class="dot"></span>Audit Logging</span> <span class="badge badge-exc">Exception Approved</span></li>
+            <li><span class="node inherited"><span class="dot"></span>Vendor Risk Mgmt</span> <span class="badge badge-ga">Verified</span></li>
+          </ul>
+        </li>
+
+        <!-- Org C: pending -->
+        <li>
+          <span class="node org"><span class="dot"></span>Org C: APAC Entity</span>
+          <ul class="tree">
+            <li><span class="node inherited"><span class="dot"></span>MFA Required</span> <span class="badge badge-preview">Pending Review</span></li>
+            <li><span class="node inherited"><span class="dot"></span>Encryption at Rest</span> <span class="badge badge-ga">Verified</span></li>
+            <li><span class="node inherited"><span class="dot"></span>Audit Logging</span> <span class="badge badge-ga">Verified</span></li>
+            <li><span class="node inherited"><span class="dot"></span>Vendor Risk Mgmt</span> <span class="badge badge-preview">Pending Review</span></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+
+  <!-- Rollout status -->
+  <div class="gap-table-wrap" style="margin-top: 24px;">
+    <div class="gap-table-title">Rollout monitoring (CCA view from hub)</div>
+    <table class="gap-table">
+      <tr>
+        <th>Org</th>
+        <th>MFA Required</th>
+        <th>Encryption at Rest</th>
+        <th>Audit Logging</th>
+        <th>Vendor Risk Mgmt</th>
+      </tr>
+      <tr>
+        <td style="font-weight:500;">Org A: US</td>
+        <td class="st-match">&#10003; Verified</td>
+        <td class="st-match">&#10003; Verified</td>
+        <td class="st-match">&#10003; Verified</td>
+        <td class="st-drift">&#9679; In Progress</td>
+      </tr>
+      <tr>
+        <td style="font-weight:500;">Org B: EU</td>
+        <td class="st-match">&#10003; Verified</td>
+        <td class="st-drift">&#9679; In Progress</td>
+        <td class="st-exception">&#9650; Exception</td>
+        <td class="st-match">&#10003; Verified</td>
+      </tr>
+      <tr>
+        <td style="font-weight:500;">Org C: APAC</td>
+        <td class="st-drift">&#9679; Pending Review</td>
+        <td class="st-match">&#10003; Verified</td>
+        <td class="st-match">&#10003; Verified</td>
+        <td class="st-drift">&#9679; Pending Review</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="legend" style="margin-top: 16px;">
+    <div class="legend-item"><span style="color:#1a7f44; font-weight:600;">&#10003;</span> Verified</div>
+    <div class="legend-item"><span style="color:#b55a00; font-weight:600;">&#9679;</span> In Progress / Pending</div>
+    <div class="legend-item"><span style="color:#9b2c2c; font-weight:600;">&#9650;</span> Exception Approved</div>
+  </div>
+
+  <div class="note">Dashed borders on inherited controls distinguish them from locally-created controls. Exceptions carry an audit trail: justification, approver, expiration date, and review cadence.</div>
+</div>
+
+<!-- ========== BET 3 ========== -->
+<div id="bet3" class="tab-content">
+  <div class="tab-header">Bet 3: Evidence Sharing</div>
+  <div class="tab-desc">Optimization layer on top of Bet 2's governance foundation. Orgs share evidence and test results when requirements overlap across inherited controls. Reduces duplicated compliance work and increases switching cost. AI suggests evidence mappings when controls overlap.</div>
+
+  <div class="whats-new">
+    <strong>What's new in Bet 3:</strong>
+    <ul>
+      <li>Cross-org evidence linking for shared/inherited controls</li>
+      <li>AI-suggested evidence mappings when controls overlap</li>
+      <li>Evidence status visibility from the hub</li>
+      <li>Shared evidence tagged and auditable across orgs</li>
+    </ul>
+  </div>
+
+  <ul class="tree">
+    <li>
+      <span class="node hub"><span class="dot"></span>Organizations Hub</span>
+      <ul class="tree">
+
+        <!-- Hub controls with shared evidence -->
+        <li>
+          <span class="node common-ctrl"><span class="dot"></span>Hub Control: MFA Required</span>
+          <span class="badge badge-req">Required</span>
+          <span class="fw-tags"><span class="fw-tag">SOC 2 CC6.1</span><span class="fw-tag">ISO 27001 A.9.4.2</span><span class="fw-tag">HIPAA &sect;164.312(d)</span></span>
+          <ul class="tree">
+            <li><span class="node shared-ev"><span class="dot"></span>Shared Evidence: Okta MFA policy screenshot</span> <span class="badge badge-shared">Shared across 3 orgs</span></li>
+          </ul>
+        </li>
+        <li>
+          <span class="node common-ctrl"><span class="dot"></span>Hub Control: Encryption at Rest</span>
+          <span class="badge badge-req">Required</span>
+          <span class="fw-tags"><span class="fw-tag">SOC 2 CC6.7</span><span class="fw-tag">ISO 27001 A.10.1.1</span><span class="fw-tag">HIPAA &sect;164.312(a)(2)(iv)</span></span>
+          <ul class="tree">
+            <li><span class="node shared-ev"><span class="dot"></span>Shared Evidence: AWS KMS config export</span> <span class="badge badge-shared">Shared across 2 orgs</span></li>
+          </ul>
+        </li>
+        <li>
+          <span class="node common-ctrl"><span class="dot"></span>Hub Control: Audit Logging</span>
+          <span class="badge badge-rec">Recommended</span>
+          <span class="fw-tags"><span class="fw-tag">SOC 2 CC7.2</span><span class="fw-tag">ISO 27001 A.12.4.1</span></span>
+        </li>
+        <li>
+          <span class="node common-ctrl"><span class="dot"></span>Hub Control: Vendor Risk Mgmt</span>
+          <span class="badge badge-req">Required</span>
+          <span class="fw-tags"><span class="fw-tag">SOC 2 CC9.2</span><span class="fw-tag">ISO 27001 A.15.1.1</span><span class="fw-tag">HIPAA &sect;164.308(b)(1)</span></span>
+          <ul class="tree">
+            <li><span class="node shared-ev"><span class="dot"></span>Shared Evidence: Vendor review process doc</span> <span class="badge badge-shared">Shared across 3 orgs</span></li>
+          </ul>
+        </li>
+
+        <li style="margin-top: 8px;"><hr class="divider" style="margin: 0;"/></li>
+
+        <!-- Orgs with evidence status -->
+        <li>
+          <span class="node org"><span class="dot"></span>Org A: US Entity</span>
+          <ul class="tree">
+            <li><span class="node inherited"><span class="dot"></span>MFA Required</span> <span class="badge badge-ga">Verified</span> <span class="badge badge-shared">shared evidence</span></li>
+            <li><span class="node inherited"><span class="dot"></span>Encryption at Rest</span> <span class="badge badge-ga">Verified</span> <span class="badge badge-shared">shared evidence</span></li>
+            <li><span class="node inherited"><span class="dot"></span>Audit Logging</span> <span class="badge badge-ga">Verified</span></li>
+            <li><span class="node inherited"><span class="dot"></span>Vendor Risk Mgmt</span> <span class="badge badge-ga">Verified</span> <span class="badge badge-shared">shared evidence</span></li>
+          </ul>
+        </li>
+        <li>
+          <span class="node org"><span class="dot"></span>Org B: EU Entity</span>
+          <ul class="tree">
+            <li><span class="node inherited"><span class="dot"></span>MFA Required</span> <span class="badge badge-ga">Verified</span> <span class="badge badge-shared">shared evidence</span></li>
+            <li><span class="node inherited"><span class="dot"></span>Encryption at Rest</span> <span class="badge badge-ga">Verified</span> <span class="badge badge-shared">shared evidence</span></li>
+            <li><span class="node exception"><span class="dot"></span>Audit Logging</span> <span class="badge badge-exc">Exception</span></li>
+            <li><span class="node inherited"><span class="dot"></span>Vendor Risk Mgmt</span> <span class="badge badge-ga">Verified</span> <span class="badge badge-shared">shared evidence</span></li>
+          </ul>
+        </li>
+        <li>
+          <span class="node org"><span class="dot"></span>Org C: APAC Entity</span>
+          <ul class="tree">
+            <li><span class="node inherited"><span class="dot"></span>MFA Required</span> <span class="badge badge-ga">Verified</span> <span class="badge badge-shared">shared evidence</span></li>
+            <li><span class="node inherited"><span class="dot"></span>Encryption at Rest</span> <span class="badge badge-ga">Verified</span></li>
+            <li><span class="node inherited"><span class="dot"></span>Audit Logging</span> <span class="badge badge-ga">Verified</span></li>
+            <li><span class="node inherited"><span class="dot"></span>Vendor Risk Mgmt</span> <span class="badge badge-ga">Verified</span> <span class="badge badge-shared">shared evidence</span></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+
+  <!-- Evidence reuse table -->
+  <div class="gap-table-wrap" style="margin-top: 24px;">
+    <div class="gap-table-title">Evidence collection: shared vs. independent</div>
+    <table class="gap-table">
+      <tr>
+        <th>Hub Control</th>
+        <th>Evidence</th>
+        <th>Orgs Using</th>
+        <th>Collections</th>
+      </tr>
+      <tr>
+        <td style="font-weight:500;">MFA Required</td>
+        <td>Okta MFA policy screenshot</td>
+        <td>A, B, C</td>
+        <td class="st-shared">1x (shared)</td>
+      </tr>
+      <tr>
+        <td style="font-weight:500;">Encryption at Rest</td>
+        <td>AWS KMS config export</td>
+        <td>A, B</td>
+        <td class="st-shared">1x (shared)</td>
+      </tr>
+      <tr>
+        <td style="font-weight:500;">Encryption at Rest</td>
+        <td>Alibaba Cloud encryption config</td>
+        <td>C</td>
+        <td style="color:#6e6e73;">1x (org-specific)</td>
+      </tr>
+      <tr>
+        <td style="font-weight:500;">Vendor Risk Mgmt</td>
+        <td>Vendor review process doc</td>
+        <td>A, B, C</td>
+        <td class="st-shared">1x (shared)</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="callout"><strong>Impact:</strong> Without evidence sharing, 4 controls x 3 orgs = 12 evidence collections. With sharing: 5 total. AI suggests which existing evidence can satisfy a new org's control requirements based on framework mappings and prior matches.</div>
+</div>
+
+<script>
+  function showTab(id) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    const tabs = document.querySelectorAll('.tab');
+    const map = { current: 0, bet1: 1, bet2: 2, bet3: 3 };
+    tabs[map[id]].classList.add('active');
+  }
+</script>
+
+</body>
+</html>
