@@ -33,3 +33,11 @@ Create a subfolder under `Companies/` with the company name. See `Companies/_tem
 - Use when: Prepping for a design partnership interview (cross-functional PM/design collaboration)
 - Best for: AI PMs — includes themes on value of design when PMs can prototype, PM value in the AI age, designing for humans and agents
 - Invoke by saying: `Prep me for [Company] design partnership interview`
+
+### Case Study Prep
+- Folder: `skills/case-study/`
+- File: `skills/case-study/case-study-prep.md`
+- Use when: Prepping for a case study interview (take-home deliverable + live review session)
+- What it does: Helps scope the document with a surface area audit, generates defense prep with anticipated questions and answer structures, runs a mock review session with Staff-level feedback
+- Key insight: Prep time should split 60/40 between building the artifact and preparing to defend it under live questioning
+- Invoke by saying: `Prep me for [Company] case study interview`
